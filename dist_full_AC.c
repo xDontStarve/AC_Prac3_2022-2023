@@ -12,7 +12,6 @@ double *D[N],*apD,*X, *Y, *Z;
 
 int main(int np, char*p[])
 {
-    clock_t time = clock();
     int i,j,rr;
     long long sD;
 
@@ -68,7 +67,5 @@ int main(int np, char*p[])
     }
 
     printf("Suma elements de D: %lld \n",sD);
-    double final_time = (double) (clock() - time) / CLOCKS_PER_SEC;
-    printf("Tiempo de ejecución: %f segundos\n", final_time);
     exit(0);
 }
