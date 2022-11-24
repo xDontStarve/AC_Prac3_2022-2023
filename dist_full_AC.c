@@ -12,6 +12,7 @@ double *D[N],*apD,*X, *Y, *Z;
 
 int main(int np, char*p[])
 {
+    clock_t time = clock();
     int i,j,rr;
     long long sD;
 
@@ -41,7 +42,7 @@ int main(int np, char*p[])
         Z[i]=(rr*3*i)%100 - 49.0;
         //printf("%lg, %lg, %lg \n",X[i],Y[i],Z[i]);
     }
-    
+    clock_t paralel_time = clock();
     // calcul de distancies
     for (i=0;i<nn;i++) {
         for (j=0;j<nn;j++) {
@@ -50,7 +51,8 @@ int main(int np, char*p[])
 						 + pow((Z[i] - Z[j]),2));
 		}
     }
-
+    double final_paralel_time = (double) (clock() - paralel_time) / CLOCKS_PER_SEC;
+    printf("Tiempo de ejecución paralela: %f segundos\n", final_paralel_time);
     // comprovacio
     sD = 0;
     for (i=0;i<nn;i++) {
@@ -66,6 +68,7 @@ int main(int np, char*p[])
     }
 
     printf("Suma elements de D: %lld \n",sD);
-
-exit(0);
+    double final_time = (double) (clock() - time) / CLOCKS_PER_SEC;
+    printf("Tiempo de ejecución: %f segundos\n", final_time);
+    exit(0);
 }
