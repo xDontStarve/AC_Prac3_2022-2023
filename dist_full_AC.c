@@ -12,7 +12,8 @@ double *D[N],*apD,*X, *Y, *Z;
 
 int main(int np, char*p[])
 {
-    clock_t time = clock();
+	clock_t parameter_resolution_time = clock();
+	// Resolució dels paràmetres
     int i,j,rr;
     long long sD;
 
@@ -22,9 +23,12 @@ int main(int np, char*p[])
     assert(nn<=N);
     srand(1);
 
-    printf("Dimensio dades =~ %g Mbytes\n",((double)(nn*(nn+2))*sizeof(double))/(1024*1024)); 
+    //printf("Dimensio dades =~ %g Mbytes\n",((double)(nn*(nn+2))*sizeof(double))/(1024*1024)); 
+	double final_parameter_resolution_time = (double) (clock() - parameter_resolution_time) / CLOCKS_PER_SEC;
+	printf("ParameterResolution Time(s): %f\n", final_parameter_resolution_time);
 
-    //creacio matrius i vectors
+    // Creacio matrius i vectors
+	clock_t array_creation_time = clock();
     apD = calloc(nn*nn,sizeof(double)); assert (apD);
     D[0] = apD;
     for (i=0;i<nn;i++) {
@@ -33,8 +37,11 @@ int main(int np, char*p[])
     X = calloc(nn,sizeof(double)); assert (X);
     Y = calloc(nn,sizeof(double)); assert (Y);
     Z = calloc(nn,sizeof(double)); assert (Z);
+	double final_array_creation_time = (double) (clock() - array_creation_time) / CLOCKS_PER_SEC;
+	printf("ArrayCreation Time(s): %f\n", final_array_creation_time);
 
     // Inicialitzacio
+	clock_t initialization_time = clock();
 	rr = rand();
     for (i=0;i<nn;i++) {
         X[i]=(rr*i)%100 - 49.0;
@@ -42,8 +49,11 @@ int main(int np, char*p[])
         Z[i]=(rr*3*i)%100 - 49.0;
         //printf("%lg, %lg, %lg \n",X[i],Y[i],Z[i]);
     }
+	double final_initialization_time = (double) (clock() - initialization_time) / CLOCKS_PER_SEC;
+	printf("Initialization Time(s): %f\n", final_initialization_time);
+
     clock_t paralel_time = clock();
-    // calcul de distancies
+    // Calcul de distancies
     for (i=0;i<nn;i++) {
         for (j=0;j<nn;j++) {
 			D[i][j] = sqrt(pow((X[i] - X[j]),2) 
@@ -52,8 +62,10 @@ int main(int np, char*p[])
 		}
     }
     double final_paralel_time = (double) (clock() - paralel_time) / CLOCKS_PER_SEC;
-    printf("Tiempo de ejecución paralela: %f segundos\n", final_paralel_time);
-    // comprovacio
+    printf("Parallelizable Time(s): %f\n", final_paralel_time);
+    
+	clock_t verification_time = clock();
+	// Comprovacio
     sD = 0;
     for (i=0;i<nn;i++) {
         for (j=i+1;j<nn;j++) {
@@ -66,9 +78,9 @@ int main(int np, char*p[])
     	}
 		//printf("\n");
     }
+	//printf("Suma elements de D: %lld \n",sD);
+    double final_verification_time = (double) (clock() - verification_time) / CLOCKS_PER_SEC;
+	printf("Verification Time(s): %f\n", final_verification_time);
 
-    printf("Suma elements de D: %lld \n",sD);
-    double final_time = (double) (clock() - time) / CLOCKS_PER_SEC;
-    printf("Tiempo de ejecución: %f segundos\n", final_time);
     exit(0);
 }
