@@ -4,31 +4,35 @@
 #include <time.h>
 #include <math.h>
 #include <assert.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdint.h>
 
 #define N 50000
 
-int nn;
+int nn, nt, lines, modulus;
 double *D[N],*apD,*X, *Y, *Z;
+
+void* partial_calculation(void* args);
 
 int main(int np, char*p[])
 {
-	clock_t parameter_resolution_time = clock();
-	// Resolució dels paràmetres
     int i,j,rr;
     long long sD;
+    pthread_t *threads;
 
-    assert(np==2);
+    assert(np==3);
 
     nn = atoi(p[1]);
     assert(nn<=N);
     srand(1);
 
-    //printf("Dimensio dades =~ %g Mbytes\n",((double)(nn*(nn+2))*sizeof(double))/(1024*1024)); 
-	double final_parameter_resolution_time = (double) (clock() - parameter_resolution_time) / CLOCKS_PER_SEC;
-	printf("ParameterResolution Time(s): %f\n", final_parameter_resolution_time);
+    // getting the number of threads from programm arguments
+    nt = atoi(p[2]);
 
-    // Creacio matrius i vectors
-	clock_t array_creation_time = clock();
+    printf("Dimensio dades =~ %g Mbytes\n",((double)(nn*(nn+2))*sizeof(double))/(1024*1024)); 
+
+    //creacio matrius i vectors
     apD = calloc(nn*nn,sizeof(double)); assert (apD);
     D[0] = apD;
     for (i=0;i<nn;i++) {
@@ -37,11 +41,8 @@ int main(int np, char*p[])
     X = calloc(nn,sizeof(double)); assert (X);
     Y = calloc(nn,sizeof(double)); assert (Y);
     Z = calloc(nn,sizeof(double)); assert (Z);
-	double final_array_creation_time = (double) (clock() - array_creation_time) / CLOCKS_PER_SEC;
-	printf("ArrayCreation Time(s): %f\n", final_array_creation_time);
 
     // Inicialitzacio
-	clock_t initialization_time = clock();
 	rr = rand();
     for (i=0;i<nn;i++) {
         X[i]=(rr*i)%100 - 49.0;
@@ -49,23 +50,21 @@ int main(int np, char*p[])
         Z[i]=(rr*3*i)%100 - 49.0;
         //printf("%lg, %lg, %lg \n",X[i],Y[i],Z[i]);
     }
-	double final_initialization_time = (double) (clock() - initialization_time) / CLOCKS_PER_SEC;
-	printf("Initialization Time(s): %f\n", final_initialization_time);
-
-    clock_t paralel_time = clock();
-    // Calcul de distancies
-    for (i=0;i<nn;i++) {
-        for (j=0;j<nn;j++) {
-			D[i][j] = sqrt(pow((X[i] - X[j]),2) 
-						 + pow((Y[i] - Y[j]),2)
-						 + pow((Z[i] - Z[j]),2));
-		}
-    }
-    double final_paralel_time = (double) (clock() - paralel_time) / CLOCKS_PER_SEC;
-    printf("Parallelizable Time(s): %f\n", final_paralel_time);
     
-	clock_t verification_time = clock();
-	// Comprovacio
+    threads = malloc(sizeof(pthread_t) * nt);
+    lines = nn / nt;
+    modulus = nn % nt;
+    printf("Lines:%d, Mod:%d\n", lines, modulus);
+    // calculate the portion of code for each thread
+    for (long i = 0; i < nt; i++){ 
+        pthread_create(&threads[i], NULL, partial_calculation, (intptr_t *) i);
+    }
+
+    for (int i = 0; i < nt; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // comprovacio
     sD = 0;
     for (i=0;i<nn;i++) {
         for (j=i+1;j<nn;j++) {
@@ -78,9 +77,33 @@ int main(int np, char*p[])
     	}
 		//printf("\n");
     }
-	//printf("Suma elements de D: %lld \n",sD);
-    double final_verification_time = (double) (clock() - verification_time) / CLOCKS_PER_SEC;
-	printf("Verification Time(s): %f\n", final_verification_time);
 
-    exit(0);
+    printf("Suma elements de D: %lld \n",sD);
+    pthread_exit(NULL);
+    return 0;
+}
+
+void *partial_calculation(void *args) {
+    long id = (intptr_t) args;
+    int start = lines * id;
+    int end = lines * (id+1);
+
+    for (int i = start; i < end; i++) {
+        for (int j=0;j<nn;j++) {
+			D[i][j] = sqrt(pow((X[i] - X[j]),2) 
+						 + pow((Y[i] - Y[j]),2)
+						 + pow((Z[i] - Z[j]),2));
+		}
+    }
+//Finish line of current thread is previus thread's last line + number of lines per thread (lines), +1 if thread is assigned an extra line (modulus) 
+    if (id<modulus){
+        int i = nt * lines + id;
+        for (int j=0;j<nn;j++) {
+			D[i][j] = sqrt(pow((X[i] - X[j]),2) 
+						 + pow((Y[i] - Y[j]),2)
+						 + pow((Z[i] - Z[j]),2));
+		}
+    }
+    printf("[%03li]start=%d, end=%d\n", id, start, end);
+    return NULL;
 }
